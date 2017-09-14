@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private final String dir = Environment.getExternalStorageDirectory() + "/mPhotoGrid/";
     Bitmap bitmap = null;
 
-
+    public static Uri selectedImageUri;
 
 
 
@@ -76,8 +76,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 getImageFromCamera();
                 break;
             case R.id.linearLayoutGrid:
+
                 break;
             case R.id.linearLayoutEdit:
+                getImageFromGalleryToEdit();
                 break;
             default:
                 break;
@@ -120,7 +122,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     }
+public void getImageFromGalleryToEdit(){
+    CameraPermissions permissions = new CameraPermissions(this);
+    if (!permissions.checkPermissionForExternalRead()) {
+        permissions.requestPermissionForExternalRead();
+    } else {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        intent.setType("image/*");
+        startActivityForResult(Intent.createChooser(intent, "Select File"), GALLERY_PERMISSION);
 
+    }
+
+}
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -132,27 +145,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Intent nextIntent=new Intent(MainActivity.this,FullScreenImageActivity.class);
                 nextIntent.putExtra("cameraImage",finalImage);
                 startActivity(nextIntent);
+                finish();
                 Log.d(TAG, "Image sent to next Activity");
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.d(TAG, "Failed!!");
             }
         }
-//        if (resultCode == RESULT_OK && requestCode == GALLERY_PERMISSION) {
-//            try {
-//                Uri selectedImageUri = data.getData();
-//                String imagepath = getPath(selectedImageUri);
-//                bitmap = BitmapFactory.decodeFile(imagepath);
-//                profileImage.setImageBitmap(bitmap);
-//                String myBase64Image = bitmapToBase64(bitmap);
-//                profilePicture.setImage(resizeBase64Image(myBase64Image));
-//                profilePictureTable.update(profilePicture);
-//                Log.d(TAG, "Profile Image Changed from gallery" + imagepath);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                Log.d(TAG, "Failed to update Image");
-//            }
-//        }
+        if (resultCode == RESULT_OK && requestCode == GALLERY_PERMISSION) {
+            try {
+                selectedImageUri = data.getData();
+                String imagepath = getPath(selectedImageUri);
+                bitmap = BitmapFactory.decodeFile(imagepath);
+                String myBase64Image=bitmapToBase64(bitmap);
+                String finalImage=resizeBase64Image(myBase64Image);
+                Intent nextIntent=new Intent(MainActivity.this,FullScreenImageActivity.class);
+                nextIntent.putExtra("cameraImage",finalImage);
+                startActivity(nextIntent);
+                Log.d(TAG, "Profile Image Changed from gallery" + imagepath);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.d(TAG, "Failed to update Image");
+            }
+        }
 
     }
 
@@ -193,7 +208,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (image.getHeight() <= 400 && image.getWidth() <= 400) {
             return base64image;
         }
-        image = Bitmap.createScaledBitmap(image, 100, 100, false);
+        image = Bitmap.createScaledBitmap(image, 300, 300, false);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         image.compress(Bitmap.CompressFormat.PNG, 100, baos);
